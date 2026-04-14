@@ -14,6 +14,19 @@ namespace WebApplication
         public static volatile bool Active = false;
 
         public static readonly string Token = "labtoken-change-me";
+
+        /// <summary>
+        /// Deactivates the VPP and restarts the AppDomain to flush the
+        /// ASP.NET compilation cache. HostingEnvironment has no public
+        /// UnregisterVirtualPathProvider, so an AppDomain recycle is the
+        /// only reliable way to fully remove a registered provider.
+        /// </summary>
+        public static void DeactivateAndUnload()
+        {
+            Active = false;
+            Registered = false;
+            HttpRuntime.UnloadAppDomain();
+        }
     }
 
     public sealed class LabVirtualPathProvider : VirtualPathProvider
@@ -31,16 +44,18 @@ namespace WebApplication
             return string.Equals(token, LabVppState.Token, StringComparison.Ordinal);
         }
 
+        private bool IsTargetPath(string virtualPath)
+        {
+            var appRel = VirtualPathUtility.ToAppRelative(virtualPath);
+            return string.Equals(appRel, TargetPath, StringComparison.OrdinalIgnoreCase);
+        }
+
         private VirtualPathProvider PrevOrNull => Previous;
 
         public override bool FileExists(string virtualPath)
         {
-            if (LabVppState.Active && IsAuthorizedRequest())
-            {
-                var appRel = VirtualPathUtility.ToAppRelative(virtualPath);
-                if (string.Equals(appRel, TargetPath, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            }
+            if (LabVppState.Active && IsAuthorizedRequest() && IsTargetPath(virtualPath))
+                return true;
 
             if (PrevOrNull != null) return PrevOrNull.FileExists(virtualPath);
             return base.FileExists(virtualPath);
@@ -48,15 +63,27 @@ namespace WebApplication
 
         public override VirtualFile GetFile(string virtualPath)
         {
-            if (LabVppState.Active && IsAuthorizedRequest())
-            {
-                var appRel = VirtualPathUtility.ToAppRelative(virtualPath);
-                if (string.Equals(appRel, TargetPath, StringComparison.OrdinalIgnoreCase))
-                    return new LabVirtualFile(virtualPath);
-            }
+            if (LabVppState.Active && IsAuthorizedRequest() && IsTargetPath(virtualPath))
+                return new LabVirtualFile(virtualPath);
 
             if (PrevOrNull != null) return PrevOrNull.GetFile(virtualPath);
             return base.GetFile(virtualPath);
+        }
+
+        /// <summary>
+        /// Returns null for the virtual path served by this provider so that
+        /// ASP.NET does not attempt to set up FileChangesMonitor on a
+        /// non-existent physical directory.
+        /// </summary>
+        public override CacheDependency GetCacheDependency(
+            string virtualPath, IEnumerable virtualPathDependencies, DateTime utcStart)
+        {
+            if (IsTargetPath(virtualPath))
+                return null;
+
+            if (PrevOrNull != null)
+                return PrevOrNull.GetCacheDependency(virtualPath, virtualPathDependencies, utcStart);
+            return base.GetCacheDependency(virtualPath, virtualPathDependencies, utcStart);
         }
     }
 

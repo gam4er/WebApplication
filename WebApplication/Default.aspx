@@ -23,8 +23,9 @@
 
     protected void btnDeactivate_Click(object sender, EventArgs e)
     {
-        LabVppState.Active = false;
-        UpdateStatus();
+        LabVppState.DeactivateAndUnload();
+        // AppDomain is recycling — the response will redirect to the fresh instance.
+        Response.Redirect(Request.RawUrl, true);
     }
 
     private void UpdateStatus()
@@ -48,7 +49,7 @@
     <h2>VirtualPathProvider Lab</h2>
 
     <asp:Button ID="btnRegister" runat="server" Text="Register VPP (and activate)" OnClick="btnRegister_Click" />
-    <asp:Button ID="btnDeactivate" runat="server" Text="Deactivate (no unregister)" OnClick="btnDeactivate_Click" />
+    <asp:Button ID="btnDeactivate" runat="server" Text="Deactivate (AND unregister)" OnClick="btnDeactivate_Click" />
 
     <hr />
     <asp:Label ID="lblStatus" runat="server" />

@@ -32,8 +32,8 @@
         lblStatus.Text = "VPP registered: " + LabVppState.Registered + "<br/>" +
                          "VPP active: " + LabVppState.Active + "<br/>" +
                          "Token: " + HttpUtility.HtmlEncode(LabVppState.Token) + "<br/>" +
-                         "Virtual URL: <a href=\"/vpp/googlecheck.aspx?token=" +
-                         HttpUtility.UrlEncode(LabVppState.Token) + "\">/vpp/googlecheck.aspx?token=" +
+                         "Virtual URL: <a href=\"/googlecheck.aspx?token=" +
+                         HttpUtility.UrlEncode(LabVppState.Token) + "\">/googlecheck.aspx?token=" +
                          HttpUtility.HtmlEncode(LabVppState.Token) + "</a>";
     }
 </script>

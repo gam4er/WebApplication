@@ -1,5 +1,4 @@
 using System;
-using System;
 using System.Collections;
 using System.IO;
 using System.Text;
@@ -19,7 +18,7 @@ namespace WebApplication
 
     public sealed class LabVirtualPathProvider : VirtualPathProvider
     {
-        private static readonly string TargetPath = "~/vpp/googlecheck.aspx";
+        private static readonly string TargetPath = "~/googlecheck.aspx";
 
         private static bool IsAuthorizedRequest()
         {

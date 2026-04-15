@@ -28,14 +28,23 @@
         Response.Redirect(Request.RawUrl, true);
     }
 
+    protected void btnFlushCache_Click(object sender, EventArgs e)
+    {
+        lblCacheResult.Text = HttpUtility.HtmlEncode(LabVppState.FlushDiskCompilationCache());
+        UpdateStatus();
+    }
+
     private void UpdateStatus()
     {
+        var appPath = HttpRuntime.AppDomainAppVirtualPath.TrimEnd('/');
+        var vppUrl = appPath + "/googlecheck.aspx?token=" + HttpUtility.UrlEncode(LabVppState.Token);
+
         lblStatus.Text = "VPP registered: " + LabVppState.Registered + "<br/>" +
                          "VPP active: " + LabVppState.Active + "<br/>" +
                          "Token: " + HttpUtility.HtmlEncode(LabVppState.Token) + "<br/>" +
-                         "Virtual URL: <a href=\"/googlecheck.aspx?token=" +
-                         HttpUtility.UrlEncode(LabVppState.Token) + "\">/googlecheck.aspx?token=" +
-                         HttpUtility.HtmlEncode(LabVppState.Token) + "</a>";
+                         "Virtual URL: <a href=\"" + vppUrl + "\">" +
+                         HttpUtility.HtmlEncode(vppUrl) + "</a><br/>" +
+                         "CodegenDir: <code>" + HttpUtility.HtmlEncode(HttpRuntime.CodegenDir) + "</code>";
     }
 </script>
 
@@ -50,9 +59,12 @@
 
     <asp:Button ID="btnRegister" runat="server" Text="Register VPP (and activate)" OnClick="btnRegister_Click" />
     <asp:Button ID="btnDeactivate" runat="server" Text="Deactivate (AND unregister)" OnClick="btnDeactivate_Click" />
+    <asp:Button ID="btnFlushCache" runat="server" Text="Flush disk compilation cache" OnClick="btnFlushCache_Click" />
 
     <hr />
     <asp:Label ID="lblStatus" runat="server" />
+    <br />
+    <asp:Label ID="lblCacheResult" runat="server" ForeColor="Green" />
 </form>
 </body>
 </html>

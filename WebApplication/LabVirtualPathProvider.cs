@@ -16,16 +16,53 @@ namespace WebApplication
         public static readonly string Token = "labtoken-change-me";
 
         /// <summary>
-        /// Deactivates the VPP and restarts the AppDomain to flush the
-        /// ASP.NET compilation cache. HostingEnvironment has no public
-        /// UnregisterVirtualPathProvider, so an AppDomain recycle is the
-        /// only reliable way to fully remove a registered provider.
+        /// Deactivates the VPP, wipes the disk compilation cache
+        /// (Temporary ASP.NET Files) for this application, and then
+        /// restarts the AppDomain. This is the only reliable way to
+        /// fully remove a registered VPP on full IIS, where the
+        /// DiskBuildResultCache survives AppDomain recycles.
         /// </summary>
         public static void DeactivateAndUnload()
         {
             Active = false;
             Registered = false;
+            FlushDiskCompilationCache();
             HttpRuntime.UnloadAppDomain();
+        }
+
+        /// <summary>
+        /// Deletes all files in the Temporary ASP.NET Files folder for
+        /// the current application. On full IIS this is the
+        /// DiskBuildResultCache that persists compiled virtual pages
+        /// across AppDomain restarts and even app pool recycles.
+        /// Returns a human-readable status string.
+        /// </summary>
+        public static string FlushDiskCompilationCache()
+        {
+            try
+            {
+                var tempDir = HttpRuntime.CodegenDir;
+                if (string.IsNullOrEmpty(tempDir) || !Directory.Exists(tempDir))
+                    return "CodegenDir not found: " + (tempDir ?? "(null)");
+
+                int deleted = 0;
+                foreach (var file in Directory.GetFiles(tempDir, "*", SearchOption.AllDirectories))
+                {
+                    try { File.Delete(file); deleted++; }
+                    catch { /* locked by current AppDomain — will be gone after recycle */ }
+                }
+                foreach (var dir in Directory.GetDirectories(tempDir))
+                {
+                    try { Directory.Delete(dir, true); }
+                    catch { }
+                }
+
+                return "Deleted " + deleted + " file(s) from " + tempDir;
+            }
+            catch (Exception ex)
+            {
+                return ex.GetType().Name + ": " + ex.Message;
+            }
         }
     }
 
